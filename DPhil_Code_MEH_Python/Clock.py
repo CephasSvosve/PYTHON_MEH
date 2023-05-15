@@ -51,6 +51,8 @@ def clock_settings(period, dt):
     config['TIME']['end']   = str(period)
     config['TIME']['dt']    = str(dt)
     
+    with open('Config.ini', 'w') as configfile:    # save
+        config.write(configfile)
 #%%
 
 

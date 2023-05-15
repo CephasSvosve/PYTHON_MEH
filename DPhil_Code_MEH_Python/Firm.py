@@ -39,7 +39,6 @@ class Firm(Firms_master_file):
 #%%      
     def merge_fundamentals(self):
         df = pd.merge(self.attributes_df, self.fundamentals_ts)
-        print('df',df)
         return df
     
     
@@ -111,9 +110,10 @@ class Firm(Firms_master_file):
 
 
   #%%      
-    def plot_price_vs_value(self):
+    def plot_price_vs_value(self, start = 0):
         df = self.merge_fundamentals()
-        plt.scatter(df['Mid_price'], df['Intrinsic_value'],marker = '.',linewidths=0.01,c = 'black')
+        df = df.tail(df.shape[0]-start)
+        plt.scatter(df['Mid_price'], df['Intrinsic_value'], marker = '.',linewidths=0.01,c = 'black')
         plt.xlabel('Price')
         plt.ylabel('Value')
         plt.show()

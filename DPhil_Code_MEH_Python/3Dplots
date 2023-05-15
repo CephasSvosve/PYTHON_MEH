@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Apr 29 14:54:33 2023
+
+@author: cephassvosve
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from mpl_toolkits.mplot3d import axes3d
+# from mayavi import *
+# from mayavi import mlab
+
+
+
+
+
+
+
+# fig = plt.figure()
+# ax = plt.axes(projection='3d')
+# ax.plot_surface(df['p1'], df['p2'], df['z'], rstride=1, cstride=1,
+#                 cmap='viridis', edgecolor='none')
+# ax.set_title('surface');
+nv1 = 100
+nv2 = 300
+nt1 = 50
+nt2 = 200
+N1  = nv1 + nt1
+N2  = nv2 + nt2
+WT  = 1300
+V1  = 15
+V2  = 21
+P1t = 18
+P2t = 20
+
+def f(x, y):
+    
+    
+    v = (-1*(nv1*x  + nv2*y)*np.log(x /V1))/(x *(((np.abs(np.log(x/V1)))+(np.abs(np.log(y/V2))))))
+    t= (((nt1*x + nt2*y)*np.log(x/P1t)))/(x *(((np.abs(np.log(x /P1t)))+(np.abs(np.log(y/P2t))))))-N1
+
+    return (v+t)
+
+def f2(x, y):
+    return 0.0*(x*y)
+
+x = np.linspace(1, 25, 30)
+y = np.linspace(1, 25, 30)
+
+X, Y = np.meshgrid(x, y)
+Z = f(X, Y)
+Z2= f2(X,Y)
+
+
+
+# def f3()
+
+# A fix for "API 'QString' has already been set to version 1"
+# see https://github.com/enthought/pyface/issues/286#issuecomment-335436808
+# from sys import version_info
+# if version_info[0] < 3:
+#     import pyface.qt
+    
+
+# def v2_mayavi(transparency):
+    
+#     fig = mlab.figure()
+
+#     ax_ranges = [-2, 2, -2, 2, 0, 8]
+#     ax_scale = [1.0, 1.0, 0.4]
+#     ax_extent = ax_ranges * np.repeat(ax_scale, 2)
+
+#     surf3 = mlab.surf(X, Y, Z, colormap='Blues')
+#     surf4 = mlab.surf(X, Y, Z2, colormap='Oranges')
+
+#     surf3.actor.actor.scale = ax_scale
+#     surf4.actor.actor.scale = ax_scale
+#     mlab.view(60, 74, 17, [-2.5, -4.6, -0.3])
+#     mlab.outline(surf3, color=(.7, .7, .7), extent=ax_extent)
+#     mlab.axes(surf3, color=(.7, .7, .7), extent=ax_extent,
+#               ranges=ax_ranges,
+#               xlabel='x', ylabel='y', zlabel='z')
+
+#     if transparency:
+#         surf3.actor.property.opacity = 0.5
+#         surf4.actor.property.opacity = 0.5
+#         fig.scene.renderer.use_depth_peeling = 1
+
+
+# v2_mayavi(True)
+
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
+                cmap='gist_earth', edgecolor='none',zorder = 1.0)
+ax.plot_surface(X, Y, Z2, rstride=1, cstride=1,
+                color = 'black', edgecolor='black', alpha = 0.25,zorder = 0.1)
+
+ax.set_xlabel('p1')
+ax.set_ylabel('p2')
+ax.set_zlabel('Excess Demand');
+# ax.view_init(0, 0)
+
+

@@ -33,13 +33,13 @@ class Fund(Balance_sheets, Investment_strategies):
                                        , self.closing_balances,  self.smaller_window, self.larger_window)
        
         
-        self.set_initial_balances(cash, init_inventory=self.inventory )
+        self.set_initial_parameters(cash, init_inventory=self.inventory )
         
     
     
  #%%  
     
-    def set_initial_parameters(self):
+    def set_initial_parameters(self,cash,init_inventory):
         self.set_initial_balances(cash, init_inventory)
         
  #%%
@@ -54,4 +54,5 @@ class Fund(Balance_sheets, Investment_strategies):
         orders     = self.compute_demand()
         return orders
        
-    
+    def get_firms_pool(self):
+        return self.firms_pool

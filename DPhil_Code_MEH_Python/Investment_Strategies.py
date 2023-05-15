@@ -29,14 +29,24 @@ class Investment_strategies:
         cash        = self.closing_balances.get('Cash')
         wealth      = self.closing_balances.get('Total_wealth')
         quote       = self.firms_pool.get(Asset_ID).get_last_quote()
-        exs_demand  = (quote/200)*(wealth * signal -  self.closing_balances.get('Inventory').get(Asset_ID)*quote)
+        
+        
+        print('*********')
+        print('strtegy',self.INVESTMENT_STRATEGY)
+        print('wealth',wealth)
+        print('signal',signal)
+        print('inventory',self.closing_balances.get('Inventory').get(Asset_ID))
+        print('quote',quote)
+        print('*********')
+        
+        
+        exs_demand  = (quote/300)*(wealth * signal -  self.closing_balances.get('Inventory').get(Asset_ID)*quote)
         Bid_price   = quote
         Ask_price   = quote
         qty         = (exs_demand/Bid_price) 
      
         Bid_qty     = np.max((0.,qty))
         Ask_qty     = np.min((0.,qty))
-        
         
         
         orderObj = Order(self.ID_NUM, self.INVESTMENT_STRATEGY)
@@ -53,21 +63,24 @@ class Investment_strategies:
         signals      = {}
         norm_signals = {}
         orders       = {}
+        price       = {}
+        val ={}
         for k,v in self.firms_pool.items():
             quote   = v.get_last_quote()
             value   = v.get_closing_fundamentals().get('Intrinsic_value')
            
-            signal  = np.sign(-np.log(quote/value))
+            signal  = 0. if quote == value else (-np.log(quote/value))
             
             signals.update({k:signal})
+            price.update({k:quote})
+            val.update({k:value})
             
+       
         
-         
-        
-        norm_factor      = 0 if sum(np.abs(v) for v in signals.values()) < 0.001 else 1./sum(np.abs(v) for v in signals.values())
+        norm_factor      =0. if (sum(abs(v) for v in signals.values())) < 0.001 else 1./(sum(abs(v)for v in signals.values()))
         norm_signals     = {k: v*norm_factor for k,v in signals.items()}
         orders           = {k: self.create_order(k,v) for k,v in norm_signals.items()}
-        
+   
       
        
         return orders
@@ -101,12 +114,12 @@ class Investment_strategies:
             quote           = v.get_last_quote()
             value           = v.get_closing_fundamentals().get('Intrinsic_value')
             biased_value    = 2*value * 1./(1+np.exp(-0.1*X))
-            signal          = np.sign(-np.log(quote/biased_value)) 
+            signal          =  0. if quote == value else (-np.log(quote/biased_value)) 
             
             signals.update({k:signal})
             
             
-        norm_factor      = 0 if sum(np.abs(v) for v in signals.values()) < 0.001 else 1./sum(np.abs(v) for v in signals.values())
+        norm_factor      = 0 if ((sum(v**2 for v in signals.values()))**(0.5)) < 0.001 else 1./((sum(v**2 for v in signals.values()))**(0.5))
         norm_signals     = {k: v*norm_factor for k,v in signals.items()}
         orders           = {k: self.create_order(k,v) for k,v in norm_signals.items()}
       
@@ -156,11 +169,11 @@ class Investment_strategies:
                 ma_smaller_window   = np.mean(v.get_quote_ts(window_size = self.smaller_window))
                 ma_larger_window    = np.mean(v.get_quote_ts(window_size = self.larger_window))
            
-                signal              = np.sign(-np.log(ma_larger_window/ma_smaller_window))
+                signal              = (-np.log(ma_larger_window/ma_smaller_window))
                 
                 signals.update({k:signal})
                 
-            norm_factor      = 0 if sum(np.abs(v) for v in signals.values()) < 0.001 else 1./sum(np.abs(v) for v in signals.values())
+            norm_factor      =  0 if ((sum(v**2 for v in signals.values()))**(0.5)) < 0.001 else 1./((sum(v**2 for v in signals.values()))**(0.5))
             norm_signals     = {k: v*norm_factor for k,v in signals.items()}
             orders           = {k: self.create_order(k,v) for k,v in norm_signals.items()}
             

@@ -44,13 +44,42 @@ class Balance_sheets:
         self.df.to_csv(INVESTMENT_STRATEGY, index=False)
         
         
-    def set_wealth(self,cash):
-        for k, v in self.firms_pool.items():
-            self.closing_balances['Inventory'][k] = 0.
         
-        self.closing_balances['Cash']           = cash
-        self.closing_balances['Total_wealth']   = self.closing_balances['Cash']   
         
+    def set_wealth(self,inventory = 0., cash = 0.):
+        inventory = inventory/3.
+        # for k, v in self.firms_pool.items():
+        #     self.closing_balances['Inventory'][k] = 0.
+        self.opening_balances['Cash']           = self.opening_balances['Cash'] + cash
+        self.opening_balances['Total_wealth']   = self.opening_balances['Total_wealth']   + cash 
+        
+        
+        self.closing_balances['Cash']           = self.closing_balances['Cash'] + cash
+        self.closing_balances['Total_wealth']   = self.closing_balances['Total_wealth']   + cash 
+        
+        for ID, firm in self.firms_pool.items():
+            self.opening_balances['Inventory'][ID]  = inventory/firm.get_last_quote()
+            self.opening_balances['Total_wealth']   = self.opening_balances['Total_wealth'] + inventory*firm.get_last_quote()
+        
+            self.closing_balances['Inventory'][ID]  = inventory/firm.get_last_quote()
+            self.closing_balances['Total_wealth']   = self.closing_balances['Total_wealth'] + inventory
+        
+        
+        
+        
+        
+    def add_cash(self,cash):
+        # for k, v in self.firms_pool.items():
+        #     self.closing_balances['Inventory'][k] = 0.
+        self.opening_balances['Cash']           = self.opening_balances['Cash'] + cash
+        self.opening_balances['Total_wealth']   = self.opening_balances['Total_wealth']   + cash 
+        
+        
+        self.closing_balances['Cash']           = self.closing_balances['Cash'] + cash
+        self.closing_balances['Total_wealth']   = self.closing_balances['Total_wealth']   + cash 
+        
+
+
 
  #%%   
     def receive_dividend(self):
@@ -66,7 +95,7 @@ class Balance_sheets:
                 self.dividend    += v * self.firms_pool.get(k).dividend_paid_out()
                 
          
-            self.closing_balances['Div_received']  = 0.
+        self.closing_balances['Div_received']  = 0.#push this statement inside to allow for dividend payment
         
             
         
@@ -90,6 +119,8 @@ class Balance_sheets:
         self.opening_balances['Total_wealth']     = total_wealth
         self.opening_balances['Div_received']     = 0.
         self.closing_balances                     = self.opening_balances
+
+        
         self.record_balance()
         
     
@@ -97,38 +128,57 @@ class Balance_sheets:
     
     
  #%%   
-    def update_balances(self, executed_orders, cleared_asset = None):
+    def update_inventory(self, executed_orders):
         self.receive_dividend()
+       
         self.opening_balances                     = self.closing_balances
         self.closing_balances['Date']             = time()
         cash                                      = self.closing_balances['Cash'] 
         cash_spending                             = 0.
-        total_wealth                              = self.closing_balances['Cash']
+   
         
-        
-        for k, v in self.closing_balances.get('Inventory').items():
-                total_wealth                     += v* self.firms_pool.get(k).get_last_quote()
-        
-        if cleared_asset is None:
+      
+        if executed_orders is not None:
             for k, v in executed_orders.items():
-                self.closing_balances['Inventory'][k] += v.get('Exs_demand')/self.firms_pool.get(k).get_last_quote()
-                cash_spending                         += -1 * v.get('Exs_demand')
-        else:
-            self.closing_balances['Inventory'][cleared_asset] += executed_orders.get(cleared_asset).get('Exs_demand')/self.firms_pool.get(cleared_asset).get_last_quote()
-            cash_spending                         += -1 * executed_orders.get(cleared_asset).get('Exs_demand')
-            
+              
+                self.closing_balances['Inventory'][k] += v/self.firms_pool.get(k).get_last_quote()
+                cash_spending                         += -1 * v
+     
             
         
         self.closing_balances['Cash']              =  self.closing_balances['Cash'] + cash_spending
-        self.closing_balances['Total_wealth']      = cash_spending  + total_wealth 
-        self.record_balance()
         
-    
-    
+
 #%%setters   
 
 
-
+    def update_wealth(self):
+        cash            = self.closing_balances['Cash'] 
+        total_wealth    = 0.
+        inventory_wealth= 0.
+        
+        
+        for k,v in self.closing_balances.get('Inventory').items():
+            inventory_wealth += v*self.firms_pool.get(k).get_last_quote()
+            
+        self.closing_balances['Total_wealth']  = total_wealth + cash + inventory_wealth 
+        self.record_balance()  
+        
+            
+            
+        
+        
+    def reset_wealth(self):
+        self.closing_balances['Total_wealth'] = 0.
+        self.closing_balances['Cash']         = 0.
+        self.closing_balances['Div_received'] = 0.
+        
+        for k,v in self.firms_pool.items():
+            self.closing_balances['Inventory'][k]    = 0.
+        
+        
+        
+        
 
 
 

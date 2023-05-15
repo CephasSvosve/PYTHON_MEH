@@ -27,9 +27,13 @@ class Market_clearer(Fund):
     
  
  #%%   
-    def update_agents(self, funds, firms, executed_orders,cleared_asset= None, allocators = None):
+    def update_agents(self, funds, firms, executed_orders = None, allocators = None):
         for k,v in funds.items():
-            v.update_balances(executed_orders.get(k),cleared_asset)
+            if executed_orders is None:
+                v.update_wealth()
+            else:
+                v.update_inventory(executed_orders.get(k))
+              
             
             
         for k,v in firms.items():
@@ -110,21 +114,36 @@ class Market_clearer(Fund):
         demand_list         = []
         excess_demand       = {}
         orders_dict         = {}
+        Q                   = {}
+        W                   = {}
         
+        #work out the quantity supplied, Q (negative wealth/cost of goods)
+        #work out the wealth available to make the purchase ( positive wealth)
+        #send out demand and supply
         for ID,fund in funds.items():
-            
-            orders          = fund.demand() if fund.closing_balances.get('Total_wealth') > 0 else None
-            orders_dict[ID] = {}
-            
-            
-            for k, v in orders.items():
-                orders_dict[ID][k] = v
+            if  fund.closing_balances.get('Total_wealth') > 0.:
                 
-                if k in excess_demand:
-                    excess_demand[k]  += v.get('Exs_demand')
-                else:
-                    excess_demand[k]   = v.get('Exs_demand')
-            
+               
+                orders          = fund.demand()  
+                
+                
+               
+                for k, v in orders.items():
+                    if k in orders_dict.keys():
+                        orders_dict[k][ID] = v.get('Exs_demand')
+                    else:
+                        orders_dict[k]     = {}
+                        orders_dict[k][ID] = v.get('Exs_demand')
+                        
+                        
+                    if k in excess_demand.keys():
+                        excess_demand[k]  += v.get('Exs_demand')
+                    else:
+                        excess_demand[k]   = v.get('Exs_demand')
+                       
+            else:
+                fund.reset_wealth()
+                print(ID, ' is bankrupt')
         
         return excess_demand, orders_dict
     
@@ -140,56 +159,95 @@ class Market_clearer(Fund):
 
 #%%
 # clear by matching submitted demand
+    # def clear_stock_markets(self, funds):
+    
+    #     excess_demand, orders_dict = self.excess_demand(funds, self.firms_pool)
+
+    #     funds_orders                = {}
+    #     value                       = {}
+    #     quotes                      = {}
+    #     executed_orders             = {}
+        
+        
+   
+    #     #update number of shares
+    #     for odered_asset, orders_submitted in orders_dict.items():
+    #         abs_sum = 0
+    #         for trading_agent, order_size in orders_submitted.items():
+    #             abs_sum += abs(order_size) 
+                
+    
+    #         if abs(sum(orders_submitted.values())) < abs_sum: #|D(1) +D(2)| < |D(1)| +|D(2)|
+            
+    #             sum_neg_orders          = abs(sum(size_ for _,size_ in orders_submitted.items() if size_ <0.))
+    #             sum_pos_orders          = abs(sum(size_ for _,size_ in orders_submitted.items() if size_ >0.))
+    #             exchanged_shares        = 0.5*(abs_sum - abs(sum(orders_submitted.values())))
+    #             for trading_agent, order_size in orders_submitted.items():
+    #                 if trading_agent in executed_orders.keys():
+    #                     executed_orders[trading_agent][odered_asset] = (order_size /sum_neg_orders)*exchanged_shares if order_size<0. else (order_size /sum_pos_orders)*exchanged_shares
+                      
+    #                 else:
+    #                     executed_orders[trading_agent] = {}
+    #                     executed_orders[trading_agent][odered_asset] = (order_size /sum_neg_orders)*exchanged_shares if order_size<0. else (order_size /sum_pos_orders)*exchanged_shares
+                      
+                        
+    #             self.update_agents(funds,self.firms_pool,executed_orders)
+      
+    #     for k,v in self.firms_pool.items():
+    #         market_cap              = v.attributes.get('Market_cap')
+    #         market_cap             += excess_demand.get(k)
+    #         new_quote               = market_cap / v.attributes.get('Issued_shares') 
+            
+            
+    #         v.set_quote(new_quote)
+    #         v.set_market_cap(market_cap)
+    #         quotes.update({k: new_quote})
+    #         value.update({k:v.get_closing_fundamentals().get('Intrinsic_value')})
+    #         v.update_attributes(new_quote,new_quote)
+       
+      
+    #     self.update_agents(funds,self.firms_pool)
+       
+        
+    #     return value, quotes
+#%%    
+# clear by matching submitted demand
     def clear_stock_markets(self, funds):
+    
         excess_demand, orders_dict  = self.excess_demand(funds, self.firms_pool)
-     
-        mm_orders                   = {}
+
+        funds_orders                = {}
         value                       = {}
         quotes                      = {}
+        executed_orders             = {}
         
+        
+    
         
         for k,v in self.firms_pool.items():
-            market_cap              = v.attributes.get('Market_cap') + excess_demand.get(k)
+            market_cap              = v.attributes.get('Market_cap')
+            market_cap             += excess_demand.get(k)
             new_quote               = market_cap / v.attributes.get('Issued_shares') 
-            
+            print('Issued shares',v.attributes.get('Issued_shares') )
             
             v.set_quote(new_quote)
             v.set_market_cap(market_cap)
             quotes.update({k: new_quote})
             value.update({k:v.get_closing_fundamentals().get('Intrinsic_value')})
             v.update_attributes(new_quote,new_quote)
+            
+            for fund, order in orders_dict.get(k).items():
+                executed_orders[fund]    = {}
+                executed_orders[fund][k] = orders_dict[k][fund]
+                self.update_agents(funds,self.firms_pool, executed_orders)
+                
+      
+        self.update_agents(funds,self.firms_pool, executed_orders = None)
        
-          
-        
-        
-        self.update_agents(funds,self.firms_pool,orders_dict)
         
         return value, quotes
 
 
-
-#%%    
-#clear by searching unique clearing price
-    # def clear_stock_markets(self, funds):
-        
-     
-    #     mm_orders                   = {}
-    #     value                       = {}
-    #     quotes                      = {}
-        
-    #     for k,v in self.firms_pool.items():
-    #         previous_quote          = v.get_last_quote()
-    #         new_quote,orders_dict   = self.search(previous_quote, funds, k, depth = 1.)
-            
-    #         v.update_attributes(new_quote,new_quote)
-    #         quotes.update({k:new_quote})
-    #         self.update_agents(funds,self.firms_pool,orders_dict,k)
-    #         value.update({k:v.get_closing_fundamentals().get('Intrinsic_value')})
-            
-            
-        
-        
-    #     return value, quotes
   
 #%%   
   

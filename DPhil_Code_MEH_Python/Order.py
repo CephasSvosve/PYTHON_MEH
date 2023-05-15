@@ -25,7 +25,7 @@ class Order:
                       }
         
  #%%   
-    def order(self, Asset_ID, exs_demand, Bid_price, Bid_qty, Ask_price, Ask_qty):
+    def order(self, Asset_ID, exs_demand = 0., Bid_price=0., Bid_qty=0., Ask_price=0., Ask_qty=0.):
         self.order_message['Date']                  = time()
         self.order_message['Asset_ID']              = Asset_ID
         self.order_message['Exs_demand']            = exs_demand
